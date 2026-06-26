@@ -8,10 +8,12 @@ let currentId = null
 
 getStudents().then((res) => console.log(res));
 
-buttonEl.addEventListener("click", () => {
-  getStudents().then((res) => renderStudents(res));
+buttonEl.addEventListener("click", async () => {
+const res = await getStudents()
+await renderStudents(res)
 });
 
+// .then((res) => renderStudents(res));
 
 
 function renderStudents(students) {
@@ -38,7 +40,7 @@ function renderStudents(students) {
 
 
 
-formEl.addEventListener("submit", (e) => {
+formEl.addEventListener("submit",async (e) => {
   e.preventDefault();
   const data = {
     name: e.currentTarget.name.value,
@@ -49,38 +51,62 @@ formEl.addEventListener("submit", (e) => {
     isEnrolled: e.currentTarget.isEnrolled.checked,
   };
   if(currentId){
-    updateStudent(currentId, data).then(getStudents).then(res => renderStudents(res)).finally(()=>{
-        formEl.reset()
-        currentId = null
-    })
-    return 
+try {
+   await updateStudent(currentId, data)
+ const res = await getStudents()
+renderStudents(res) 
+formEl.reset()
+currentId = null
+return
+} catch (error) {
+  console.log(error);
+}
   }
 
+    //   .then(getStudents).then(res => renderStudents(res)).finally(()=>{
+    //     formEl.reset()
+    //     currentId = null
+    // })
 
-  addStudent(data)
-    .then(() => getStudents())
-    .then((res) => renderStudents(res));
+try {
+  await addStudent(data)
+const res = await getStudents()
+  renderStudents(res)
   formEl.reset();
+} catch (error) {
+  console.log(error);
+}
 });
 
+    // .then(() => getStudents())
+    // .then((res) => renderStudents(res));
 
-
-function addStudent(e) {
+async function addStudent(e) {
   const options = {
     method: "POST",
     body: JSON.stringify(e),
     headers: {
       "Content-Type": "application/json; charset=UTF-8",
     },
-  };
-  return fetch("http://localhost:3000/students", options).then((res) =>
-    res.json(),
-  );
+  }; 
+try {
+  const res = await fetch("http://localhost:3000/students", options)
+  if(!res.ok){
+    throw new Error(error.message)
+  }
+  const info = await res.json()
+  return info
+} catch (error) {
+  throw error
+}
 }
 
+// .then((res) =>
+//     res.json(),
+//   );
 
 
-function updateStudent(id, data) {
+async function updateStudent(id, data) {
   const options = {
     method: "PUT",
     body: JSON.stringify(data),
@@ -88,30 +114,54 @@ function updateStudent(id, data) {
       "Content-Type": "application/json; charset=UTF-8",
     },
   };
-  return fetch(`http://localhost:3000/students/${id}`, options).then(
-    (response) => response.json(),
-  );
+try {
+  const res = await fetch(`http://localhost:3000/students/${id}`, options)
+if(!res.ok){
+  throw new Error(error.message)
+}
+  const response = await res.json()
+  return response
+} catch (error) {
+  throw error
+}
 }
 
+// .then(
+//     (response) => response.json(),
+//   );
 
-
-function deleteStudent(id) {
+async function deleteStudent(id) {
   console.log(id);
-  return fetch(`http://localhost:3000/students/${id}`, {
+  try {
+    const res = await fetch(`http://localhost:3000/students/${id}`, {
     method: "DELETE",
-  }).then((res) => res.json());
+  })
+     if(!res.ok){
+      throw new Error(error.message)
+     }
+    const info = await res.json()
+     return info
+  } catch (error) {
+    throw error
+  }
 }
 
+// .then((res) => res.json());
 
-
-tbodyEl.addEventListener("click", (e) => {
+tbodyEl.addEventListener("click",async (e) => {
   const td = e.target.closest("td");
   const currentTd = td.parentNode;
   const id = currentTd.id;
   if (e.target.dataset.action === "delete") {
-    deleteStudent(id)
-      .then(getStudents)
-      .then((res) => renderStudents(res));
+    try {
+    await deleteStudent(id)
+    const res = await getStudents()
+    await renderStudents(res)
+    } catch (error) {
+      console.log(error);
+    }
+      // .then(getStudents)
+      // .then((res) => renderStudents(res));
   }
   if (e.target.dataset.action === "edit") {
     currentId = id
