@@ -720,9 +720,11 @@ const tbodyEl = document.querySelector(".tbody");
 const formEl = document.getElementById("add-student-form");
 let currentId = null;
 (0, _getStudents.getStudents)().then((res)=>console.log(res));
-buttonEl.addEventListener("click", ()=>{
-    (0, _getStudents.getStudents)().then((res)=>renderStudents(res));
+buttonEl.addEventListener("click", async ()=>{
+    const res = await (0, _getStudents.getStudents)();
+    await renderStudents(res);
 });
+// .then((res) => renderStudents(res));
 function renderStudents(students) {
     const item = students.map(({ id, name, age, course, skills, email, isEnrolled })=>{
         return `<tr id="${id}">
@@ -741,7 +743,7 @@ function renderStudents(students) {
     }).join("");
     tbodyEl.innerHTML = item;
 }
-formEl.addEventListener("submit", (e)=>{
+formEl.addEventListener("submit", async (e)=>{
     e.preventDefault();
     const data = {
         name: e.currentTarget.name.value,
@@ -751,17 +753,32 @@ formEl.addEventListener("submit", (e)=>{
         email: e.currentTarget.email.value,
         isEnrolled: e.currentTarget.isEnrolled.checked
     };
-    if (currentId) {
-        updateStudent(currentId, data).then((0, _getStudents.getStudents)).then((res)=>renderStudents(res)).finally(()=>{
-            formEl.reset();
-            currentId = null;
-        });
+    if (currentId) try {
+        await updateStudent(currentId, data);
+        const res = await (0, _getStudents.getStudents)();
+        renderStudents(res);
+        formEl.reset();
+        currentId = null;
         return;
+    } catch (error1) {
+        console.log(error1);
     }
-    addStudent(data).then(()=>(0, _getStudents.getStudents)()).then((res)=>renderStudents(res));
-    formEl.reset();
+    //   .then(getStudents).then(res => renderStudents(res)).finally(()=>{
+    //     formEl.reset()
+    //     currentId = null
+    // })
+    try {
+        await addStudent(data);
+        const res = await (0, _getStudents.getStudents)();
+        renderStudents(res);
+        formEl.reset();
+    } catch (error1) {
+        console.log(error1);
+    }
 });
-function addStudent(e) {
+// .then(() => getStudents())
+// .then((res) => renderStudents(res));
+async function addStudent(e) {
     const options = {
         method: "POST",
         body: JSON.stringify(e),
@@ -769,9 +786,19 @@ function addStudent(e) {
             "Content-Type": "application/json; charset=UTF-8"
         }
     };
-    return fetch("http://localhost:3000/students", options).then((res)=>res.json());
+    try {
+        const res = await fetch("http://localhost:3000/students", options);
+        if (!res.ok) throw new Error(error.message);
+        const info = await res.json();
+        return info;
+    } catch (error1) {
+        throw error1;
+    }
 }
-function updateStudent(id, data) {
+// .then((res) =>
+//     res.json(),
+//   );
+async function updateStudent(id, data) {
     const options = {
         method: "PUT",
         body: JSON.stringify(data),
@@ -779,19 +806,43 @@ function updateStudent(id, data) {
             "Content-Type": "application/json; charset=UTF-8"
         }
     };
-    return fetch(`http://localhost:3000/students/${id}`, options).then((response)=>response.json());
+    try {
+        const res = await fetch(`http://localhost:3000/students/${id}`, options);
+        if (!res.ok) throw new Error(error.message);
+        const response = await res.json();
+        return response;
+    } catch (error1) {
+        throw error1;
+    }
 }
-function deleteStudent(id) {
+// .then(
+//     (response) => response.json(),
+//   );
+async function deleteStudent(id) {
     console.log(id);
-    return fetch(`http://localhost:3000/students/${id}`, {
-        method: "DELETE"
-    }).then((res)=>res.json());
+    try {
+        const res = await fetch(`http://localhost:3000/students/${id}`, {
+            method: "DELETE"
+        });
+        if (!res.ok) throw new Error(error.message);
+        const info = await res.json();
+        return info;
+    } catch (error1) {
+        throw error1;
+    }
 }
-tbodyEl.addEventListener("click", (e)=>{
+// .then((res) => res.json());
+tbodyEl.addEventListener("click", async (e)=>{
     const td = e.target.closest("td");
     const currentTd = td.parentNode;
     const id = currentTd.id;
-    if (e.target.dataset.action === "delete") deleteStudent(id).then((0, _getStudents.getStudents)).then((res)=>renderStudents(res));
+    if (e.target.dataset.action === "delete") try {
+        await deleteStudent(id);
+        const res = await (0, _getStudents.getStudents)();
+        await renderStudents(res);
+    } catch (error1) {
+        console.log(error1);
+    }
     if (e.target.dataset.action === "edit") {
         currentId = id;
         formEl.elements[0].value = currentTd.children[1].textContent;
@@ -806,9 +857,12 @@ tbodyEl.addEventListener("click", (e)=>{
 },{"./getStudents":"6iuT4"}],"6iuT4":[function(require,module,exports,__globalThis) {
 var parcelHelpers = require("@parcel/transformer-js/src/esmodule-helpers.js");
 parcelHelpers.defineInteropFlag(exports);
-parcelHelpers.export(exports, "getStudents", ()=>getStudents);
-function getStudents() {
-    return fetch("http://localhost:3000/students").then((res)=>res.json());
+parcelHelpers.export(exports, "getStudents", ()=>getStudents) // .then(res => res.json())
+;
+async function getStudents() {
+    const res = await fetch("http://localhost:3000/students");
+    const info = res.json();
+    return info;
 }
 
 },{"@parcel/transformer-js/src/esmodule-helpers.js":"jnFvT"}],"jnFvT":[function(require,module,exports,__globalThis) {
